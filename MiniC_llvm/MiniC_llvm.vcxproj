@@ -81,9 +81,7 @@
   <ItemGroup>
     <CustomBuild Include="grammar\parser.y">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">set cygwin=nodosfilewarning
-
-SET BISON_SIMPLE=$(ProjectDir)tools/bison.simple
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">SET BISON_SIMPLE=$(ProjectDir)tools/bison.simple
 
 SET BISON_HAIRY=$(ProjectDir)tools/bison.hairy
 
@@ -96,8 +94,7 @@ rm $(ProjectDir)src/parser.cpp.output</Command>
     </CustomBuild>
     <CustomBuild Include="grammar\lexer.l">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">SET nodosfilewarning=1
-cd $(ProjectDir)src
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd $(ProjectDir)src
 ..\tools\flex++.exe ..\grammar\lexer.l</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Executing flex on %(FullPath)</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)src\lexer.cpp;%(Outputs)</Outputs>
@@ -114,6 +111,9 @@ cd $(ProjectDir)src
     <ClCompile Include="src\lexer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\parser.cpp" />
+    <ClCompile Include="test\test1.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

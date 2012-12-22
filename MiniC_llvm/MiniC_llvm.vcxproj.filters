@@ -19,6 +19,9 @@
     <Filter Include="Generated">
       <UniqueIdentifier>{5ffca4b7-4efa-49a6-be55-8dfd85919e77}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{5eada938-d4dd-43ad-8772-c6ac9b55db47}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="grammar\lexer.l">
@@ -51,6 +54,9 @@
     </ClCompile>
     <ClCompile Include="src\lexer.cpp">
       <Filter>Generated</Filter>
+    </ClCompile>
+    <ClCompile Include="test\test1.c">
+      <Filter>test</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
