@@ -5,7 +5,18 @@
 	NBlock *programBlock; /* the top level root node of our final AST */
 
 	extern int yylex();
-	void yyerror(const char *s) { std::printf("Error: %s\n", s);std::exit(1); }
+
+	extern unsigned int lineNo;
+	extern char *yytext;
+	extern char linebuf[50];
+
+    void yyerror(char *s)
+    {
+         printf("Line %d: %s at %s in this line:\n%s\n",
+                lineNo, s, yytext, linebuf);
+		 system("pause");
+		 exit(1);
+    }
 %}
 
 /* Represents the many different ways we can access our data */
@@ -26,10 +37,11 @@
    match our tokens.l lex file. We also define the node type
    they represent.
  */
-%token <string> TIDENTIFIER TINTEGER TDOUBLE
-%token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
-%token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
-%token <token> TPLUS TMINUS TMUL TDIV
+%token <string> IDENTIFIER INTEGER_CONSTANT DOUBLE_CONSTANT
+%token <token> EQUAL CEQ CNE CLT CLE CGT CGE
+%token <token> LPAREN RPAREN LBRACE RBRACE COMMA DOT SEMICOLON
+%token <token> PLUS MINUS MUL DIV
+%token <token> INT FLOAT DOUBLE BOOL CHAR VOID
 
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
@@ -59,49 +71,50 @@ stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1); }
 	  | stmts stmt { $1->statements.push_back($<stmt>2); }
 	  ;
 
-stmt : var_decl | func_decl
+stmt : var_decl SEMICOLON
+     | func_decl
 	 | expr { $$ = new NExpressionStatement(*$1); }
      ;
 
-block : TLBRACE stmts TRBRACE { $$ = $2; }
-	  | TLBRACE TRBRACE { $$ = new NBlock(); }
+block : LBRACE stmts RBRACE { $$ = $2; }
+	  | LBRACE RBRACE { $$ = new NBlock(); }
 	  ;
 
 var_decl : ident ident { $$ = new NVariableDeclaration(*$1, *$2); }
-		 | ident ident TEQUAL expr { $$ = new NVariableDeclaration(*$1, *$2, $4); }
+		 | ident ident EQUAL expr { $$ = new NVariableDeclaration(*$1, *$2, $4); }
 		 ;
 		
-func_decl : ident ident TLPAREN func_decl_args TRPAREN block 
+func_decl : ident ident LPAREN func_decl_args RPAREN block 
 			{ $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$6); delete $4; }
 		  ;
 	
 func_decl_args : /*blank*/  { $$ = new VariableList(); }
 		  | var_decl { $$ = new VariableList(); $$->push_back($<var_decl>1); }
-		  | func_decl_args TCOMMA var_decl { $1->push_back($<var_decl>3); }
+		  | func_decl_args COMMA var_decl { $1->push_back($<var_decl>3); }
 		  ;
 
-ident : TIDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
+ident : IDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
 	  ;
 
-numeric : TINTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
-		| TDOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
+numeric : INTEGER_CONSTANT { $$ = new NInteger(atol($1->c_str())); delete $1; }
+		| DOUBLE_CONSTANT { $$ = new NDouble(atof($1->c_str())); delete $1; }
 		;
 	
-expr : ident TEQUAL expr { $$ = new NAssignment(*$<ident>1, *$3); }
-	 | ident TLPAREN call_args TRPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
+expr : ident EQUAL expr { $$ = new NAssignment(*$<ident>1, *$3); }
+	 | ident LPAREN call_args RPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
 	 | ident { $<ident>$ = $1; }
 	 | numeric
  	 | expr comparison expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | TLPAREN expr TRPAREN { $$ = $2; }
+     | LPAREN expr RPAREN { $$ = $2; }
 	 ;
 	
 call_args : /*blank*/  { $$ = new ExpressionList(); }
 		  | expr { $$ = new ExpressionList(); $$->push_back($1); }
-		  | call_args TCOMMA expr  { $1->push_back($3); }
+		  | call_args COMMA expr  { $1->push_back($3); }
 		  ;
 
-comparison : TCEQ | TCNE | TCLT | TCLE | TCGT | TCGE 
-		   | TPLUS | TMINUS | TMUL | TDIV
+comparison : CEQ | CNE | CLT | CLE | CGT | CGE 
+		   | PLUS | MINUS | MUL | DIV
 		   ;
 
 %%

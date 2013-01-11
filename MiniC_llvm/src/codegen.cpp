@@ -114,16 +114,16 @@ Value* NBinaryOperator::codeGen(CodeGenContext& context)
 
     switch (op) 
     {
-		case TPLUS: 
+		case PLUS: 
             pInst = g_Builder.CreateAdd(L, R);
             break;
-		case TMINUS:
+		case MINUS:
             pInst = g_Builder.CreateFSub(L, R);
             break;
-		case TMUL:
+		case MUL:
             pInst = g_Builder.CreateFMul(L, R);
             break;
-		case TDIV:
+		case DIV:
             pInst = g_Builder.CreateFDiv(L, R);
             break;				
 		/* TODO comparison */

@@ -10,26 +10,37 @@ typedef union {
 	std::string *string;
 	int token;
 } YYSTYPE;
-#define	TIDENTIFIER	258
-#define	TINTEGER	259
-#define	TDOUBLE	260
-#define	TCEQ	261
-#define	TCNE	262
-#define	TCLT	263
-#define	TCLE	264
-#define	TCGT	265
-#define	TCGE	266
-#define	TEQUAL	267
-#define	TLPAREN	268
-#define	TRPAREN	269
-#define	TLBRACE	270
-#define	TRBRACE	271
-#define	TCOMMA	272
-#define	TDOT	273
-#define	TPLUS	274
-#define	TMINUS	275
-#define	TMUL	276
-#define	TDIV	277
+#define	IDENTIFIER	258
+#define	INTEGER_CONSTANT	259
+#define	DOUBLE_CONSTANT	260
+#define	EQUAL	261
+#define	CEQ	262
+#define	CNE	263
+#define	CLT	264
+#define	CLE	265
+#define	CGT	266
+#define	CGE	267
+#define	LPAREN	268
+#define	RPAREN	269
+#define	LBRACE	270
+#define	RBRACE	271
+#define	COMMA	272
+#define	DOT	273
+#define	SEMICOLON	274
+#define	PLUS	275
+#define	MINUS	276
+#define	MUL	277
+#define	DIV	278
+#define	INT	279
+#define	FLOAT	280
+#define	DOUBLE	281
+#define	BOOL	282
+#define	CHAR	283
+#define	VOID	284
+#define	TPLUS	285
+#define	TMINUS	286
+#define	TMUL	287
+#define	TDIV	288
 
 
 extern YYSTYPE yylval;
