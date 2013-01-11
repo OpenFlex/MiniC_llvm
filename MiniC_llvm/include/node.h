@@ -1,6 +1,15 @@
+#ifndef __NODE__
+#define __NODE__
+
 #include <iostream>
 #include <vector>
+
+#include <llvm\Config\config.h>
+#if defined(LLVM_VERSION_MAJOR) && LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 2 
+#include <llvm/IR/Value.h>
+#else
 #include <llvm/Value.h>
+#endif
 
 class CodeGenContext;
 class NStatement;
@@ -11,40 +20,47 @@ typedef std::vector<NStatement*> StatementList;
 typedef std::vector<NExpression*> ExpressionList;
 typedef std::vector<NVariableDeclaration*> VariableList;
 
-class Node {
+class Node
+{
 public:
 	virtual ~Node() {}
 	virtual llvm::Value* codeGen(CodeGenContext& context) { return NULL; }
 };
 
-class NExpression : public Node {
+class NExpression : public Node
+{
 };
 
-class NStatement : public Node {
+class NStatement : public Node
+{
 };
 
-class NInteger : public NExpression {
+class NInteger : public NExpression
+{
 public:
 	long long value;
 	NInteger(long long value) : value(value) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NDouble : public NExpression {
+class NDouble : public NExpression
+{
 public:
 	double value;
 	NDouble(double value) : value(value) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NIdentifier : public NExpression {
+class NIdentifier : public NExpression
+{
 public:
 	std::string name;
 	NIdentifier(const std::string& name) : name(name) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NMethodCall : public NExpression {
+class NMethodCall : public NExpression 
+{
 public:
 	const NIdentifier& id;
 	ExpressionList arguments;
@@ -54,7 +70,8 @@ public:
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NBinaryOperator : public NExpression {
+class NBinaryOperator : public NExpression
+{
 public:
 	int op;
 	NExpression& lhs;
@@ -64,7 +81,8 @@ public:
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NAssignment : public NExpression {
+class NAssignment : public NExpression
+{
 public:
 	NIdentifier& lhs;
 	NExpression& rhs;
@@ -73,14 +91,16 @@ public:
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NBlock : public NExpression {
+class NBlock : public NExpression
+{
 public:
 	StatementList statements;
 	NBlock() { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NExpressionStatement : public NStatement {
+class NExpressionStatement : public NStatement
+{
 public:
 	NExpression& expression;
 	NExpressionStatement(NExpression& expression) : 
@@ -88,7 +108,8 @@ public:
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NVariableDeclaration : public NStatement {
+class NVariableDeclaration : public NStatement
+{
 public:
 	const NIdentifier& type;
 	NIdentifier& id;
@@ -100,7 +121,8 @@ public:
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NFunctionDeclaration : public NStatement {
+class NFunctionDeclaration : public NStatement
+{
 public:
 	const NIdentifier& type;
 	const NIdentifier& id;
@@ -111,3 +133,5 @@ public:
 		type(type), id(id), arguments(arguments), block(block) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
+
+#endif

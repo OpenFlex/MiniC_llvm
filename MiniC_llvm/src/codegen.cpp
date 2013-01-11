@@ -14,11 +14,12 @@ void CodeGenContext::generateCode(NBlock& root)
 	FunctionType *ftype = FunctionType::get(Type::getVoidTy(getGlobalContext()), makeArrayRef(argTypes), false);
 	mainFunction = Function::Create(ftype, GlobalValue::InternalLinkage, "main", module);
 	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", mainFunction, 0);
-	
+	g_Builder.SetInsertPoint(bblock);
+
 	/* Push a new variable/block context */
 	pushBlock(bblock);
-	root.codeGen(*this); /* emit bytecode for the toplevel block */
-	ReturnInst::Create(getGlobalContext(), bblock);
+	Value* pRetVal = root.codeGen(*this); /* emit bytecode for the toplevel block */
+	g_Builder.CreateRet(pRetVal);
 	popBlock();
 	
 	/* Print the bytecode in a human-readable format 
@@ -44,7 +45,7 @@ GenericValue CodeGenContext::runCode() {
 static Type *typeOf(const NIdentifier& type) 
 {
 	if (type.name.compare("int") == 0) {
-		return Type::getInt64Ty(getGlobalContext());
+		return Type::getInt32Ty(getGlobalContext());
 	}
 	else if (type.name.compare("double") == 0) {
 		return Type::getDoubleTy(getGlobalContext());
@@ -57,7 +58,7 @@ static Type *typeOf(const NIdentifier& type)
 Value* NInteger::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating integer: " << value << endl;
-	return ConstantInt::get(Type::getInt64Ty(getGlobalContext()), value, true);
+	return ConstantInt::get(Type::getInt32Ty(getGlobalContext()), value, true);
 }
 
 Value* NDouble::codeGen(CodeGenContext& context)
@@ -69,67 +70,94 @@ Value* NDouble::codeGen(CodeGenContext& context)
 Value* NIdentifier::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating identifier reference: " << name << endl;
-	if (context.locals().find(name) == context.locals().end()) {
+	
+    if (context.locals().find(name) == context.locals().end()) 
+    {
 		std::cerr << "undeclared variable " << name << endl;
 		return NULL;
 	}
-	return new LoadInst(context.locals()[name], "", false, context.currentBlock());
+	
+    return new LoadInst(context.locals()[name], "", false, context.currentBlock());
 }
 
 Value* NMethodCall::codeGen(CodeGenContext& context)
 {
 	Function *function = context.module->getFunction(id.name.c_str());
-	if (function == NULL) {
+	if (function == NULL) 
+    {
 		std::cerr << "no such function " << id.name << endl;
 	}
-	std::vector<Value*> args;
+	
+    std::vector<Value*> args;
 	ExpressionList::const_iterator it;
-	for (it = arguments.begin(); it != arguments.end(); it++) {
+	for (it = arguments.begin(); it != arguments.end(); it++) 
+    {
 		args.push_back((**it).codeGen(context));
 	}
-	CallInst *call = CallInst::Create(function, makeArrayRef(args), "", context.currentBlock());
+	
+    CallInst *call = CallInst::Create(function, makeArrayRef(args), "", context.currentBlock());
 	std::cout << "Creating method call: " << id.name << endl;
 	return call;
 }
 
 Value* NBinaryOperator::codeGen(CodeGenContext& context)
 {
+    Value* L = lhs.codeGen(context);
+    Value* R = rhs.codeGen(context);
+
 	std::cout << "Creating binary operation " << op << endl;
-	Instruction::BinaryOps instr;
-	switch (op) {
-		case TPLUS: 	instr = Instruction::Add; goto math;
-		case TMINUS: 	instr = Instruction::Sub; goto math;
-		case TMUL: 		instr = Instruction::Mul; goto math;
-		case TDIV: 		instr = Instruction::SDiv; goto math;
-				
+	
+    if (L == NULL || R == NULL)
+        return NULL;
+
+    Value* pInst = NULL;
+
+    switch (op) 
+    {
+		case TPLUS: 
+            pInst = g_Builder.CreateAdd(L, R);
+            break;
+		case TMINUS:
+            pInst = g_Builder.CreateFSub(L, R);
+            break;
+		case TMUL:
+            pInst = g_Builder.CreateFMul(L, R);
+            break;
+		case TDIV:
+            pInst = g_Builder.CreateFDiv(L, R);
+            break;				
 		/* TODO comparison */
 	}
 
-	return NULL;
-math:
-	return BinaryOperator::Create(instr, lhs.codeGen(context), 
-		rhs.codeGen(context), "", context.currentBlock());
+	return pInst;
 }
 
 Value* NAssignment::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating assignment for " << lhs.name << endl;
-	if (context.locals().find(lhs.name) == context.locals().end()) {
+	
+    if (context.locals().find(lhs.name) == context.locals().end()) 
+    {
 		std::cerr << "undeclared variable " << lhs.name << endl;
 		return NULL;
 	}
-	return new StoreInst(rhs.codeGen(context), context.locals()[lhs.name], false, context.currentBlock());
+	
+    return g_Builder.CreateStore(rhs.codeGen(context), context.locals()[lhs.name], false);
 }
 
 Value* NBlock::codeGen(CodeGenContext& context)
 {
 	StatementList::const_iterator it;
 	Value *last = NULL;
-	for (it = statements.begin(); it != statements.end(); it++) {
+	
+    for (it = statements.begin(); it != statements.end(); it++) 
+    {
 		std::cout << "Generating code for " << typeid(**it).name() << endl;
 		last = (**it).codeGen(context);
+        last->dump();
 	}
-	std::cout << "Creating block" << endl;
+	
+    std::cout << "Creating block" << endl;
 	return last;
 }
 
@@ -142,12 +170,18 @@ Value* NExpressionStatement::codeGen(CodeGenContext& context)
 Value* NVariableDeclaration::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating variable declaration " << type.name << " " << id.name << endl;
-	AllocaInst *alloc = new AllocaInst(typeOf(type), id.name.c_str(), context.currentBlock());
+    AllocaInst *alloc = g_Builder.CreateAlloca(typeOf(type));
+    alloc->setName(id.name.c_str());
 	context.locals()[id.name] = alloc;
-	if (assignmentExpr != NULL) {
+    alloc->dump();
+
+    if (assignmentExpr != NULL) 
+    {
 		NAssignment assn(id, *assignmentExpr);
-		assn.codeGen(context);
+		Value* assnVal = assn.codeGen(context);
+        assnVal->dump();
 	}
+
 	return alloc;
 }
 
@@ -155,23 +189,32 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
 {
 	vector<Type*> argTypes;
 	VariableList::const_iterator it;
-	for (it = arguments.begin(); it != arguments.end(); it++) {
+	
+    for (it = arguments.begin(); it != arguments.end(); it++) 
+    {
 		argTypes.push_back(typeOf((**it).type));
 	}
-	FunctionType *ftype = FunctionType::get(typeOf(type), makeArrayRef(argTypes), false);
+	
+    FunctionType *ftype = FunctionType::get(typeOf(type), makeArrayRef(argTypes), false);
 	Function *function = Function::Create(ftype, GlobalValue::InternalLinkage, id.name.c_str(), context.module);
 	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", function, 0);
-
+    g_Builder.SetInsertPoint(bblock);
 	context.pushBlock(bblock);
 
-	for (it = arguments.begin(); it != arguments.end(); it++) {
+	for (it = arguments.begin(); it != arguments.end(); it++) 
+    {
 		(**it).codeGen(context);
 	}
 	
-	block.codeGen(context);
-	ReturnInst::Create(getGlobalContext(), bblock);
+	Value* pRetVal = block.codeGen(context);
+    pRetVal->dump();
+    g_Builder.CreateRet(pRetVal);
 
 	context.popBlock();
+
+	BasicBlock* pPrevBlock = context.currentBlock();
+	g_Builder.SetInsertPoint(pPrevBlock);
+
 	std::cout << "Creating function: " << id.name << endl;
 	return function;
 }

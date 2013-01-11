@@ -27,6 +27,7 @@ int main(int argc, char **argv)
 	context.generateCode(*programBlock);
 	context.runCode();
 	
+    system("pause");
 	return 0;
 }
 
