@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <llvm\Config\config.h>
-#if defined(LLVM_VERSION_MAJOR) && LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 2 
+#if defined(LLVM_VERSION_MAJOR) && LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 2 
 #include <llvm/IR/Value.h>
 #else
 #include <llvm/Value.h>
