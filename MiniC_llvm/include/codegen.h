@@ -27,6 +27,10 @@
 #include <llvm/PassManager.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Analysis/Verifier.h>
+#include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/PassManager.h>
+#include <llvm/Analysis/Passes.h>
+#include <llvm/Transforms/Scalar.h>
 #include <llvm/Assembly/PrintModulePass.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/ExecutionEngine/GenericValue.h>

@@ -28,6 +28,17 @@ void CodeGenContext::generateCode(NBlock& root)
 	std::cout << "Code is generated.\n";
 	PassManager pm;
 	pm.add(createPrintModulePass(&outs()));
+	pm.add(createBasicAliasAnalysisPass());
+	
+	pm.add(createInstructionCombiningPass());
+
+	pm.add(createReassociatePass());
+
+	pm.add(createGVNPass());
+
+	pm.add(createCFGSimplificationPass());
+	pm.add(createPrintModulePass(&outs()));
+
 	pm.run(*module);
 }
 
@@ -154,7 +165,6 @@ Value* NBlock::codeGen(CodeGenContext& context)
     {
 		std::cout << "Generating code for " << typeid(**it).name() << endl;
 		last = (**it).codeGen(context);
-        last->dump();
 	}
 	
     std::cout << "Creating block" << endl;
@@ -173,13 +183,11 @@ Value* NVariableDeclaration::codeGen(CodeGenContext& context)
     AllocaInst *alloc = g_Builder.CreateAlloca(typeOf(type));
     alloc->setName(id.name.c_str());
 	context.locals()[id.name] = alloc;
-    alloc->dump();
 
     if (assignmentExpr != NULL) 
     {
 		NAssignment assn(id, *assignmentExpr);
 		Value* assnVal = assn.codeGen(context);
-        assnVal->dump();
 	}
 
 	return alloc;
@@ -207,7 +215,6 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
 	}
 	
 	Value* pRetVal = block.codeGen(context);
-    pRetVal->dump();
     g_Builder.CreateRet(pRetVal);
 
 	context.popBlock();
