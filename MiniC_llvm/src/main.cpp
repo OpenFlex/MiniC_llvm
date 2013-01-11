@@ -6,7 +6,7 @@ using namespace std;
 
 extern int yyparse();
 extern FILE *yyin;
-extern NBlock* programBlock;
+extern Block* programBlock;
 
 int main(int argc, char **argv)
 {

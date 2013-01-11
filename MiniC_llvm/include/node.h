@@ -12,13 +12,13 @@
 #endif
 
 class CodeGenContext;
-class NStatement;
-class NExpression;
-class NVariableDeclaration;
+class Stmt;
+class Expr;
+class VarDecl;
 
-typedef std::vector<NStatement*> StatementList;
-typedef std::vector<NExpression*> ExpressionList;
-typedef std::vector<NVariableDeclaration*> VariableList;
+typedef std::vector<Stmt*> StatementList;
+typedef std::vector<Expr*> ExpressionList;
+typedef std::vector<VarDecl*> VariableList;
 
 class Node
 {
@@ -27,111 +27,124 @@ public:
 	virtual llvm::Value* codeGen(CodeGenContext& context) { return NULL; }
 };
 
-class NExpression : public Node
+class Expr : public Node
 {
 };
 
-class NStatement : public Node
+class Stmt : public Node
 {
 };
 
-class NInteger : public NExpression
+class ConstInt : public Expr
 {
 public:
 	long long value;
-	NInteger(long long value) : value(value) { }
+	ConstInt(long long value) : value(value) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NDouble : public NExpression
+class ConstDouble : public Expr
 {
 public:
 	double value;
-	NDouble(double value) : value(value) { }
+	ConstDouble(double value) : value(value) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NIdentifier : public NExpression
+class Identifier : public Expr
 {
 public:
 	std::string name;
-	NIdentifier(const std::string& name) : name(name) { }
+	Identifier(const std::string& name) : name(name) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NMethodCall : public NExpression 
+class MethodCall : public Expr 
 {
 public:
-	const NIdentifier& id;
+	const Identifier& id;
 	ExpressionList arguments;
-	NMethodCall(const NIdentifier& id, ExpressionList& arguments) :
+	MethodCall(const Identifier& id, ExpressionList& arguments) :
 		id(id), arguments(arguments) { }
-	NMethodCall(const NIdentifier& id) : id(id) { }
+	MethodCall(const Identifier& id) : id(id) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NBinaryOperator : public NExpression
+class BinaryOp : public Expr
 {
 public:
 	int op;
-	NExpression& lhs;
-	NExpression& rhs;
-	NBinaryOperator(NExpression& lhs, int op, NExpression& rhs) :
+	Expr& lhs;
+	Expr& rhs;
+	BinaryOp(Expr& lhs, int op, Expr& rhs) :
 		lhs(lhs), rhs(rhs), op(op) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NAssignment : public NExpression
+class AssignmentExpr : public Expr
 {
 public:
-	NIdentifier& lhs;
-	NExpression& rhs;
-	NAssignment(NIdentifier& lhs, NExpression& rhs) : 
+	Identifier& lhs;
+	Expr& rhs;
+	AssignmentExpr(Identifier& lhs, Expr& rhs) : 
 		lhs(lhs), rhs(rhs) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NBlock : public NExpression
+class Block : public Expr
 {
 public:
 	StatementList statements;
-	NBlock() { }
+	Block() { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NExpressionStatement : public NStatement
+class ExprStmt : public Stmt
 {
 public:
-	NExpression& expression;
-	NExpressionStatement(NExpression& expression) : 
+	Expr& expression;
+	ExprStmt(Expr& expression) : 
 		expression(expression) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NVariableDeclaration : public NStatement
+class VarDecl : public Stmt
 {
 public:
-	const NIdentifier& type;
-	NIdentifier& id;
-	NExpression *assignmentExpr;
-	NVariableDeclaration(const NIdentifier& type, NIdentifier& id) :
+	const Identifier& type;
+	Identifier& id;
+	Expr *assignmentExpr;
+	VarDecl(const Identifier& type, Identifier& id) :
 		type(type), id(id), assignmentExpr(NULL) { }
-	NVariableDeclaration(const NIdentifier& type, NIdentifier& id, NExpression *assignmentExpr) :
+	VarDecl(const Identifier& type, Identifier& id, Expr *assignmentExpr) :
 		type(type), id(id), assignmentExpr(assignmentExpr) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
-class NFunctionDeclaration : public NStatement
+class FuncDecl : public Stmt
 {
 public:
-	const NIdentifier& type;
-	const NIdentifier& id;
+	const Identifier& type;
+	const Identifier& id;
 	VariableList arguments;
-	NBlock& block;
-	NFunctionDeclaration(const NIdentifier& type, const NIdentifier& id, 
-			const VariableList& arguments, NBlock& block) :
+	Block& block;
+	FuncDecl(const Identifier& type, const Identifier& id, 
+			const VariableList& arguments, Block& block) :
 		type(type), id(id), arguments(arguments), block(block) { }
 	virtual llvm::Value* codeGen(CodeGenContext& context);
+};
+
+class IfExpr : public ExprStmt
+{
+public:
+    Block*      m_pBlock;
+
+    IfExpr(Expr* pCondExpr, Block* pBlock)
+        : ExprStmt(*pCondExpr),
+          m_pBlock(pBlock)
+    {}
+
+    virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
 #endif

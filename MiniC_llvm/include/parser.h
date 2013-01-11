@@ -1,12 +1,14 @@
 typedef union {
-	Node *node;
-	NBlock *block;
-	NExpression *expr;
-	NStatement *stmt;
-	NIdentifier *ident;
-	NVariableDeclaration *var_decl;
-	std::vector<NVariableDeclaration*> *varvec;
-	std::vector<NExpression*> *exprvec;
+	Node       *node;
+	Block      *block;
+	Expr       *expr;
+	Stmt       *stmt;
+	Identifier *ident;
+	VarDecl    *var_decl;
+	IfExpr     *if_expr;
+	
+	std::vector<VarDecl*> *varvec;
+	std::vector<Expr*> *exprvec;
 	std::string *string;
 	int token;
 } YYSTYPE;
@@ -37,10 +39,7 @@ typedef union {
 #define	BOOL	282
 #define	CHAR	283
 #define	VOID	284
-#define	TPLUS	285
-#define	TMINUS	286
-#define	TMUL	287
-#define	TDIV	288
+#define	IF	285
 
 
 extern YYSTYPE yylval;

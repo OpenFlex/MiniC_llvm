@@ -39,7 +39,7 @@
 
 using namespace llvm;
 
-class NBlock;
+class Block;
 static IRBuilder<> g_Builder(getGlobalContext());
 
 class CodeGenBlock 
@@ -58,7 +58,7 @@ public:
     Module *module;
     CodeGenContext() { module = new Module("main", getGlobalContext()); }
     
-    void generateCode(NBlock& root);
+    void generateCode(Block& root);
     GenericValue runCode();
     std::map<std::string, Value*>& locals() { return blocks.top()->locals; }
     BasicBlock *currentBlock() { return blocks.top()->block; }

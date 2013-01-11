@@ -5,7 +5,7 @@
 using namespace std;
 
 /* Compile the AST into a module */
-void CodeGenContext::generateCode(NBlock& root)
+void CodeGenContext::generateCode(Block& root)
 {
 	std::cout << "Generating code...\n";
 	
@@ -53,7 +53,7 @@ GenericValue CodeGenContext::runCode() {
 }
 
 /* Returns an LLVM type based on the identifier */
-static Type *typeOf(const NIdentifier& type) 
+static Type *typeOf(const Identifier& type) 
 {
 	if (type.name.compare("int") == 0) {
 		return Type::getInt32Ty(getGlobalContext());
@@ -66,19 +66,19 @@ static Type *typeOf(const NIdentifier& type)
 
 /* -- Code Generation -- */
 
-Value* NInteger::codeGen(CodeGenContext& context)
+Value* ConstInt::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating integer: " << value << endl;
 	return ConstantInt::get(Type::getInt32Ty(getGlobalContext()), value, true);
 }
 
-Value* NDouble::codeGen(CodeGenContext& context)
+Value* ConstDouble::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating double: " << value << endl;
 	return ConstantFP::get(Type::getDoubleTy(getGlobalContext()), value);
 }
 
-Value* NIdentifier::codeGen(CodeGenContext& context)
+Value* Identifier::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating identifier reference: " << name << endl;
 	
@@ -91,7 +91,7 @@ Value* NIdentifier::codeGen(CodeGenContext& context)
     return new LoadInst(context.locals()[name], "", false, context.currentBlock());
 }
 
-Value* NMethodCall::codeGen(CodeGenContext& context)
+Value* MethodCall::codeGen(CodeGenContext& context)
 {
 	Function *function = context.module->getFunction(id.name.c_str());
 	if (function == NULL) 
@@ -111,7 +111,7 @@ Value* NMethodCall::codeGen(CodeGenContext& context)
 	return call;
 }
 
-Value* NBinaryOperator::codeGen(CodeGenContext& context)
+Value* BinaryOp::codeGen(CodeGenContext& context)
 {
     Value* L = lhs.codeGen(context);
     Value* R = rhs.codeGen(context);
@@ -143,7 +143,7 @@ Value* NBinaryOperator::codeGen(CodeGenContext& context)
 	return pInst;
 }
 
-Value* NAssignment::codeGen(CodeGenContext& context)
+Value* AssignmentExpr::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating assignment for " << lhs.name << endl;
 	
@@ -156,7 +156,7 @@ Value* NAssignment::codeGen(CodeGenContext& context)
     return g_Builder.CreateStore(rhs.codeGen(context), context.locals()[lhs.name], false);
 }
 
-Value* NBlock::codeGen(CodeGenContext& context)
+Value* Block::codeGen(CodeGenContext& context)
 {
 	StatementList::const_iterator it;
 	Value *last = NULL;
@@ -171,13 +171,13 @@ Value* NBlock::codeGen(CodeGenContext& context)
 	return last;
 }
 
-Value* NExpressionStatement::codeGen(CodeGenContext& context)
+Value* ExprStmt::codeGen(CodeGenContext& context)
 {
 	std::cout << "Generating code for " << typeid(expression).name() << endl;
 	return expression.codeGen(context);
 }
 
-Value* NVariableDeclaration::codeGen(CodeGenContext& context)
+Value* VarDecl::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating variable declaration " << type.name << " " << id.name << endl;
     AllocaInst *alloc = g_Builder.CreateAlloca(typeOf(type));
@@ -186,14 +186,14 @@ Value* NVariableDeclaration::codeGen(CodeGenContext& context)
 
     if (assignmentExpr != NULL) 
     {
-		NAssignment assn(id, *assignmentExpr);
+		AssignmentExpr assn(id, *assignmentExpr);
 		Value* assnVal = assn.codeGen(context);
 	}
 
 	return alloc;
 }
 
-Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
+Value* FuncDecl::codeGen(CodeGenContext& context)
 {
 	vector<Type*> argTypes;
 	VariableList::const_iterator it;
@@ -224,4 +224,9 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
 
 	std::cout << "Creating function: " << id.name << endl;
 	return function;
+}
+
+Value* IfExpr::codeGen(CodeGenContext& context)
+{
+    return NULL;
 }

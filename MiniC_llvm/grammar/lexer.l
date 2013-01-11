@@ -28,6 +28,9 @@ extern void yyerror(char *s);
                         }
 
 [ \t]					;
+
+"if"                    return TOKEN(IF);
+
 [a-zA-Z_][a-zA-Z0-9_]* 	SAVE_TOKEN; return IDENTIFIER;
 [0-9]+\.[0-9]* 			SAVE_TOKEN; return DOUBLE_CONSTANT;
 [0-9]+					SAVE_TOKEN; return INTEGER_CONSTANT;
@@ -49,5 +52,6 @@ extern void yyerror(char *s);
 "*"						return TOKEN(MUL);
 "/"						return TOKEN(DIV);
 ";"                     return TOKEN(SEMICOLON);
+
 .						printf("Unknown token!\n"); yyterminate();
 %%

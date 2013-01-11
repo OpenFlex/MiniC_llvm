@@ -31,16 +31,13 @@
 #define	BOOL	282
 #define	CHAR	283
 #define	VOID	284
-#define	TPLUS	285
-#define	TMINUS	286
-#define	TMUL	287
-#define	TDIV	288
+#define	IF	285
 
 
 	#include "node.h"
-        #include <cstdio>
-        #include <cstdlib>
-	NBlock *programBlock; /* the top level root node of our final AST */
+    #include <cstdio>
+    #include <cstdlib>
+	Block *programBlock; /* the top level root node of our final AST */
 
 	extern int yylex();
 
@@ -57,14 +54,16 @@
     }
 
 typedef union {
-	Node *node;
-	NBlock *block;
-	NExpression *expr;
-	NStatement *stmt;
-	NIdentifier *ident;
-	NVariableDeclaration *var_decl;
-	std::vector<NVariableDeclaration*> *varvec;
-	std::vector<NExpression*> *exprvec;
+	Node       *node;
+	Block      *block;
+	Expr       *expr;
+	Stmt       *stmt;
+	Identifier *ident;
+	VarDecl    *var_decl;
+	IfExpr     *if_expr;
+	
+	std::vector<VarDecl*> *varvec;
+	std::vector<Expr*> *exprvec;
 	std::string *string;
 	int token;
 } YYSTYPE;
@@ -101,9 +100,9 @@ typedef
 
 #define	YYFINAL		55
 #define	YYFLAG		-32768
-#define	YYNTBASE	34
+#define	YYNTBASE	31
 
-#define YYTRANSLATE(x) ((unsigned)(x) <= 288 ? yytranslate[x] : 46)
+#define YYTRANSLATE(x) ((unsigned)(x) <= 285 ? yytranslate[x] : 43)
 
 static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -134,7 +133,7 @@ static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     1,     2,     3,     4,     5,
      6,     7,     8,     9,    10,    11,    12,    13,    14,    15,
     16,    17,    18,    19,    20,    21,    22,    23,    24,    25,
-    26,    27,    28,    29,    30,    31,    32,    33
+    26,    27,    28,    29,    30
 };
 
 #if YYDEBUG != 0
@@ -142,53 +141,54 @@ static const short yyprhs[] = {     0,
      0,     2,     4,     7,    10,    12,    14,    18,    21,    24,
     29,    36,    37,    39,    43,    45,    47,    49,    53,    58,
     60,    62,    66,    70,    71,    73,    77,    79,    81,    83,
-    85,    87,    89,    91,    93,    95
+    85,    87,    89,    91,    93,    95,    97
 };
 
-static const short yyrhs[] = {    35,
-     0,    36,     0,    35,    36,     0,    38,    19,     0,    39,
-     0,    43,     0,    15,    35,    16,     0,    15,    16,     0,
-    41,    41,     0,    41,    41,     6,    43,     0,    41,    41,
-    13,    40,    14,    37,     0,     0,    38,     0,    40,    17,
-    38,     0,     3,     0,     4,     0,     5,     0,    41,     6,
-    43,     0,    41,    13,    44,    14,     0,    41,     0,    42,
-     0,    43,    45,    43,     0,    13,    43,    14,     0,     0,
-    43,     0,    44,    17,    43,     0,     7,     0,     8,     0,
+static const short yyrhs[] = {    32,
+     0,    33,     0,    32,    33,     0,    35,    19,     0,    36,
+     0,    40,     0,    15,    32,    16,     0,    15,    16,     0,
+    38,    38,     0,    38,    38,     6,    40,     0,    38,    38,
+    13,    37,    14,    34,     0,     0,    35,     0,    37,    17,
+    35,     0,     3,     0,     4,     0,     5,     0,    38,     6,
+    40,     0,    38,    13,    41,    14,     0,    38,     0,    39,
+     0,    40,    42,    40,     0,    13,    40,    14,     0,     0,
+    40,     0,    41,    17,    40,     0,     7,     0,     8,     0,
      9,     0,    10,     0,    11,     0,    12,     0,    20,     0,
-    21,     0,    22,     0,    23,     0
+    21,     0,    22,     0,    23,     0,    30,    13,    40,    14,
+    34,     0
 };
 
 #endif
 
 #if YYDEBUG != 0
 static const short yyrline[] = { 0,
-    67,    70,    71,    74,    75,    76,    79,    80,    83,    84,
-    87,    91,    92,    93,    96,    99,   100,   103,   104,   105,
-   106,   107,   108,   111,   112,   113,   116,   116,   116,   116,
-   116,   116,   117,   117,   117,   117
+    71,    74,    75,    78,    79,    80,    83,    84,    87,    88,
+    91,    95,    96,    97,   100,   103,   104,   107,   108,   109,
+   110,   111,   112,   115,   116,   117,   120,   120,   120,   120,
+   120,   120,   121,   121,   121,   121,   124
 };
 
 static const char * const yytname[] = {   "$","error","$undefined.","IDENTIFIER",
 "INTEGER_CONSTANT","DOUBLE_CONSTANT","EQUAL","CEQ","CNE","CLT","CLE","CGT","CGE",
 "LPAREN","RPAREN","LBRACE","RBRACE","COMMA","DOT","SEMICOLON","PLUS","MINUS",
-"MUL","DIV","INT","FLOAT","DOUBLE","BOOL","CHAR","VOID","TPLUS","TMINUS","TMUL",
-"TDIV","program","stmts","stmt","block","var_decl","func_decl","func_decl_args",
-"ident","numeric","expr","call_args","comparison",""
+"MUL","DIV","INT","FLOAT","DOUBLE","BOOL","CHAR","VOID","IF","program","stmts",
+"stmt","block","var_decl","func_decl","func_decl_args","ident","numeric","expr",
+"call_args","comparison","\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735\37777777735"
 };
 #endif
 
 static const short yyr1[] = {     0,
-    34,    35,    35,    36,    36,    36,    37,    37,    38,    38,
-    39,    40,    40,    40,    41,    42,    42,    43,    43,    43,
-    43,    43,    43,    44,    44,    44,    45,    45,    45,    45,
-    45,    45,    45,    45,    45,    45
+    31,    32,    32,    33,    33,    33,    34,    34,    35,    35,
+    36,    37,    37,    37,    38,    39,    39,    40,    40,    40,
+    40,    40,    40,    41,    41,    41,    42,    42,    42,    42,
+    42,    42,    42,    42,    42,    42,    -1
 };
 
 static const short yyr2[] = {     0,
      1,     1,     2,     2,     1,     1,     3,     2,     2,     4,
      6,     0,     1,     3,     1,     1,     1,     3,     4,     1,
      1,     3,     3,     0,     1,     3,     1,     1,     1,     1,
-     1,     1,     1,     1,     1,     1
+     1,     1,     1,     1,     1,     1,     5
 };
 
 static const short yydefact[] = {     0,
@@ -742,28 +742,28 @@ case 1:
 { programBlock = yyvsp[0].block; ;
     break;}
 case 2:
-{ yyval.block = new NBlock(); yyval.block->statements.push_back(yyvsp[0].stmt); ;
+{ yyval.block = new Block(); yyval.block->statements.push_back(yyvsp[0].stmt); ;
     break;}
 case 3:
 { yyvsp[-1].block->statements.push_back(yyvsp[0].stmt); ;
     break;}
 case 6:
-{ yyval.stmt = new NExpressionStatement(*yyvsp[0].expr); ;
+{ yyval.stmt = new ExprStmt(*yyvsp[0].expr); ;
     break;}
 case 7:
 { yyval.block = yyvsp[-1].block; ;
     break;}
 case 8:
-{ yyval.block = new NBlock(); ;
+{ yyval.block = new Block(); ;
     break;}
 case 9:
-{ yyval.stmt = new NVariableDeclaration(*yyvsp[-1].ident, *yyvsp[0].ident); ;
+{ yyval.stmt = new VarDecl(*yyvsp[-1].ident, *yyvsp[0].ident); ;
     break;}
 case 10:
-{ yyval.stmt = new NVariableDeclaration(*yyvsp[-3].ident, *yyvsp[-2].ident, yyvsp[0].expr); ;
+{ yyval.stmt = new VarDecl(*yyvsp[-3].ident, *yyvsp[-2].ident, yyvsp[0].expr); ;
     break;}
 case 11:
-{ yyval.stmt = new NFunctionDeclaration(*yyvsp[-5].ident, *yyvsp[-4].ident, *yyvsp[-2].varvec, *yyvsp[0].block); delete yyvsp[-2].varvec; ;
+{ yyval.stmt = new FuncDecl(*yyvsp[-5].ident, *yyvsp[-4].ident, *yyvsp[-2].varvec, *yyvsp[0].block); delete yyvsp[-2].varvec; ;
     break;}
 case 12:
 { yyval.varvec = new VariableList(); ;
@@ -775,25 +775,25 @@ case 14:
 { yyvsp[-2].varvec->push_back(yyvsp[0].var_decl); ;
     break;}
 case 15:
-{ yyval.ident = new NIdentifier(*yyvsp[0].string); delete yyvsp[0].string; ;
+{ yyval.ident = new Identifier(*yyvsp[0].string); delete yyvsp[0].string; ;
     break;}
 case 16:
-{ yyval.expr = new NInteger(atol(yyvsp[0].string->c_str())); delete yyvsp[0].string; ;
+{ yyval.expr = new ConstInt(atol(yyvsp[0].string->c_str())); delete yyvsp[0].string; ;
     break;}
 case 17:
-{ yyval.expr = new NDouble(atof(yyvsp[0].string->c_str())); delete yyvsp[0].string; ;
+{ yyval.expr = new ConstDouble(atof(yyvsp[0].string->c_str())); delete yyvsp[0].string; ;
     break;}
 case 18:
-{ yyval.expr = new NAssignment(*yyvsp[-2].ident, *yyvsp[0].expr); ;
+{ yyval.expr = new AssignmentExpr(*yyvsp[-2].ident, *yyvsp[0].expr); ;
     break;}
 case 19:
-{ yyval.expr = new NMethodCall(*yyvsp[-3].ident, *yyvsp[-1].exprvec); delete yyvsp[-1].exprvec; ;
+{ yyval.expr = new MethodCall(*yyvsp[-3].ident, *yyvsp[-1].exprvec); delete yyvsp[-1].exprvec; ;
     break;}
 case 20:
 { yyval.ident = yyvsp[0].ident; ;
     break;}
 case 22:
-{ yyval.expr = new NBinaryOperator(*yyvsp[-2].expr, yyvsp[-1].token, *yyvsp[0].expr); ;
+{ yyval.expr = new BinaryOp(*yyvsp[-2].expr, yyvsp[-1].token, *yyvsp[0].expr); ;
     break;}
 case 23:
 { yyval.expr = yyvsp[-1].expr; ;
@@ -806,6 +806,9 @@ case 25:
     break;}
 case 26:
 { yyvsp[-2].exprvec->push_back(yyvsp[0].expr); ;
+    break;}
+case 37:
+{ yyval.if_expr = new IfExpr(yyvsp[-2].expr, yyvsp[0].block); ;
     break;}
 }
    /* the action file gets copied in in place of this dollarsign */
