@@ -228,5 +228,20 @@ Value* FuncDecl::codeGen(CodeGenContext& context)
 
 Value* IfExpr::codeGen(CodeGenContext& context)
 {
-    return NULL;
+    Value* pCond = expression.codeGen(context);
+    if (pCond == NULL)
+        return NULL;
+
+    pCond = g_Builder.CreateFCmpONE(pCond,
+                                    ConstantFP::get(getGlobalContext(), APFloat(0.0)),
+                                    "ifcond");
+
+    Function* pFunction = g_Builder.GetInsertBlock()->getParent();
+
+    // Create blocks for then and else cases. Insert the 'then' block at the end of function
+    BasicBlock* pThenBB  = BasicBlock::Create(getGlobalContext(), "then", pFunction);
+    BasicBlock* pElseBB  = BasicBlock::Create(getGlobalContext(), "else");
+    BasicBlock* pMergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
+
+    g_Builder.CreateCondBr(pCond, pThenBB, pElseBB);
 }
