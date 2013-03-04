@@ -19,15 +19,15 @@ int main(int argc, char **argv)
 
     yyin = inpFile;
 
-	yyparse();
-	std::cout << programBlock << endl;
+    yyparse();
+    std::cout << programBlock << endl;
     // see http://comments.gmane.org/gmane.comp.compilers.llvm.devel/33877
-	InitializeNativeTarget();
-	CodeGenContext context;
-	context.generateCode(*programBlock);
-	context.runCode();
-	
+    llvm::InitializeNativeTarget();
+    CodeGenContext context;
+    context.generateCode(*programBlock);
+    context.runCode();
+    
     system("pause");
-	return 0;
+    return 0;
 }
 
